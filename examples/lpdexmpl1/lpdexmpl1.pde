@@ -8,6 +8,7 @@ private static final int NR_OF_PIXELS = 20;
 Lpd6803 lpd6803;
 boolean initialized;
 int buffer[];
+Random r = new Random();
 
 void setup() {
   try {
@@ -26,7 +27,7 @@ void setup() {
   buffer = new int[NR_OF_PIXELS];
   println("init done");
 
-  framerate(10);
+  frameRate(10);
 }
 
 
@@ -37,9 +38,5 @@ public void draw() {
     buffer[i] = r.nextInt(0xffffff)|0x7F7F7F;
   }
   
-  
   lpd6803.sendRgbFrame((byte)0, buffer, ColorFormat.RBG);
-
-  frames++;
 }
-
