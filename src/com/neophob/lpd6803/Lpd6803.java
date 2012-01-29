@@ -1,27 +1,8 @@
-/**
- * Copyright (C) 2011 Michael Vogt <michu@neophob.com>
- *
- * This file is part of PixelController.
- *
- * PixelController is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * PixelController is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with PixelController.  If not, see <http://www.gnu.org/licenses/>.
- */
-
 /*
 A nice wrapper class to control the Rainbowduino 
 
 (c) copyright 2009 by rngtng - Tobias Bielohlawek
-(c) copyright 2010/2011 by Michael Vogt/neophob.com 
+(c) copyright 2010/2011/2012 by Michael Vogt/neophob.com 
 http://code.google.com/p/rainbowduino-firmware/wiki/FirmwareFunctionsReference
 
 This library is free software; you can redistribute it and/or
@@ -113,7 +94,7 @@ public class Lpd6803 {
 	private Map<Byte, String> lastDataMap;
 	
 	/** internal buffer, how many pixels are controlled */
-  private int pixelBuffer;
+  	private int pixelBuffer;
     
 
 	/**
@@ -242,7 +223,6 @@ public class Lpd6803 {
 		if (portName == null) {
 			return;
 		}
-		
 		try {
 			port = new Serial(app, portName, this.baud);
 			sleep(1500); //give it time to initialize
@@ -352,10 +332,10 @@ public class Lpd6803 {
 	 * @throws IllegalArgumentException the illegal argument exception
 	 */
 	public boolean sendFrame(byte ofs, byte data[]) throws IllegalArgumentException {		
-		if (data.length!=64) {
+//		if (data.length!=64) {
 //			throw new IllegalArgumentException("data lenght must be 128 bytes!");
-		}
-
+//		}
+LOG.log(Level.WARNING, "send {0} bytes, announced: {1}", new Object[] {data.length, pixelBuffer});
 		boolean returnValue = false;
 		byte cmdfull[] = new byte[pixelBuffer+7];
 		
@@ -479,7 +459,7 @@ public class Lpd6803 {
 	private synchronized boolean waitForAck() {		
 		//TODO some more tuning is needed here.
 		long start = System.currentTimeMillis();
-		int timeout=8; //wait up to 50ms
+		int timeout=20;//8; //wait up to 50ms
 		//log.log(Level.INFO, "wait for ack");
 		while (timeout > 0 && port.available() < 2) {
 			sleep(4); //in ms
@@ -493,12 +473,12 @@ public class Lpd6803 {
 		}
 		//TODO: next method is not very speed/memory efficient!
 		byte[] msg = port.readBytes();
-/*		log.log(Level.INFO, "got ACK! data length: {0}", msg.length);
+/*		//LOG.log(Level.INFO, "got ACK! data length: {0}", msg.length);
 		for (byte b:msg)
 			System.out.print(Integer.toHexString(b)+' ');
 		System.out.println();
-*/		//INFO: MEEE [0, 0, 65, 67, 75, 0, 0]
-		for (int i=0; i<msg.length-1; i++) {
+		//INFO: MEEE [0, 0, 65, 67, 75, 0, 0]
+*/		for (int i=0; i<msg.length-1; i++) {
 			if (msg[i]== 'A' && msg[i+1]== 'K') {
 				try {
 					this.arduinoBufferSize = msg[i+2];
