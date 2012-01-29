@@ -335,7 +335,7 @@ public class Lpd6803 {
 //		if (data.length!=64) {
 //			throw new IllegalArgumentException("data lenght must be 128 bytes!");
 //		}
-LOG.log(Level.WARNING, "send {0} bytes, announced: {1}", new Object[] {data.length, pixelBuffer});
+
 		boolean returnValue = false;
 		byte cmdfull[] = new byte[data.length+7];
 		
@@ -484,7 +484,7 @@ LOG.log(Level.WARNING, "send {0} bytes, announced: {1}", new Object[] {data.leng
 					this.arduinoBufferSize = msg[i+2];
 					this.arduinoLastError = msg[i+3];
 					if (this.arduinoLastError!=0) {
-						LOG.log(Level.INFO, "Last Errorcode: {0}", this.arduinoLastError);
+						LOG.log(Level.INFO, "Last Errorcode: {0}", this.arduinoLastError&255);
 					}
 				} catch (Exception e) {
 					// we failed to update statistics...
