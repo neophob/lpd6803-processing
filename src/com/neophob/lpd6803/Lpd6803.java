@@ -326,7 +326,7 @@ public class Lpd6803 {
 	/**
 	 * send a frame to the active lpd6803 device.
 	 *
-	 * @param ofs - the offset get multiplied by 32 on the arduino!
+	 * @param ofs - the offset 
 	 * @param data byte[3*8*4]
 	 * @return true if send was successful
 	 * @throws IllegalArgumentException the illegal argument exception
@@ -337,16 +337,16 @@ public class Lpd6803 {
 //		}
 LOG.log(Level.WARNING, "send {0} bytes, announced: {1}", new Object[] {data.length, pixelBuffer});
 		boolean returnValue = false;
-		byte cmdfull[] = new byte[pixelBuffer+7];
+		byte cmdfull[] = new byte[data.length+7];
 		
 		cmdfull[0] = START_OF_CMD;
 		cmdfull[1] = ofs;
-		cmdfull[2] = (byte)pixelBuffer;
+		cmdfull[2] = (byte)data.length;
 		cmdfull[3] = CMD_SENDFRAME;
 		cmdfull[4] = START_OF_DATA;		
-		cmdfull[pixelBuffer+5] = END_OF_DATA;
+		cmdfull[data.length+5] = END_OF_DATA;
 
-	    System.arraycopy(data, 0, cmdfull, 5, pixelBuffer);
+	    System.arraycopy(data, 0, cmdfull, 5, data.length);
 	      
 		//send frame one
 		if (didFrameChange(ofs, cmdfull)) {
