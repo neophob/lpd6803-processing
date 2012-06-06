@@ -287,7 +287,7 @@ public class Lpd6803 {
 	 * "image format"
 	 *
 	 * @param ofs the image ofs
-	 * @param data rgb data (int[64], each int contains one RGB pixel)
+	 * @param data 64 rgb pixel data (int[64], each int contains one RGB pixel)
 	 * @param colorFormat the color format
 	 * @return true if send was successful
 	 */
@@ -295,6 +295,42 @@ public class Lpd6803 {
 		return sendFrame(ofs, convertBufferTo15bit(data, colorFormat));
 	}
 
+	/**
+	 * wrapper class to send a RGB image to the lpd6803 device.
+	 * the rgb image gets converted to the lpd6803 device compatible
+	 * "image format"
+	 *
+	 * @param ofs the image ofs
+	 * @param data n*64 rgb pixel data (int[64], each int contains one RGB pixel)
+	 * @param colorFormat the color format
+	 * @return nr of successful sends
+	 */
+	public int sendRgbFrame(int[] data, ColorFormat colorFormat) {
+		byte n=0;
+		int ret=0;
+		int slice=0;
+		int[] tmp = new int[64];
+		int remainingBytes = data.length;
+
+		while (remainingBytes>63) {
+		    System.arraycopy(data, slice*64, tmp, 0, 64);
+			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
+				ret++;			
+			}
+			remainingBytes-=64;
+			slice++;
+		}
+		
+		//Send last chunk which is smaller than 64 bytes
+		if (remainingBytes>0) {
+		    System.arraycopy(data, slice*64, tmp, 0, remainingBytes);
+			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
+				ret++;			
+			}
+		}
+		
+		return ret;
+	}
 
 	
 	/**
@@ -362,35 +398,6 @@ public class Lpd6803 {
 	}
 	
 	
-	public boolean sendAllFrame(byte data[]) throws IllegalArgumentException {		
-		boolean returnValue = false;
-		byte cmdfull[] = new byte[data.length+7];
-		
-		cmdfull[0] = START_OF_CMD;
-		cmdfull[1] = ofs;
-		cmdfull[2] = (byte)data.length;
-		cmdfull[3] = CMD_SENDFRAME;
-		cmdfull[4] = START_OF_DATA;		
-		cmdfull[data.length+5] = END_OF_DATA;
-
-	    System.arraycopy(data, 0, cmdfull, 5, data.length);
-
-		if (cmdfull.length>128) {
-			LOG.log(Level.WARNING, "send {0} bytes, this might overflow the internal serial buffer!", cmdfull.length);
-		}
-		
-		//send frame one
-		if (didFrameChange(ofs, cmdfull)) {
-			if (sendSerialData(cmdfull)) {
-				returnValue=true;
-			} else {
-				//in case of an error, make sure we send it the next time!
-				lastDataMap.put(ofs, "");
-			}
-		}
-		
-		return returnValue;
-	}
 	
 	/**
 	 * Send serial data.
@@ -564,13 +571,13 @@ public class Lpd6803 {
 	 * @throws IllegalArgumentException the illegal argument exception
 	 */
 	public byte[] convertBufferTo15bit(int[] data, ColorFormat colorFormat) throws IllegalArgumentException {
-		if (data.length!=pixelBuffer) {
+		if (data.length>pixelBuffer) {
 			throw new IllegalArgumentException("data lenght must be "+pixelBuffer+" bytes!");
 		}
 
-		int[] r = new int[pixelBuffer];
-		int[] g = new int[pixelBuffer];
-		int[] b = new int[pixelBuffer];
+		int[] r = new int[data.length];
+		int[] g = new int[data.length];
+		int[] b = new int[data.length];
 		int tmp;
 		int ofs=0;
 
