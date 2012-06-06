@@ -47,7 +47,7 @@ public class Lpd6803 {
 	private static final Logger LOG = Logger.getLogger(Lpd6803.class.getName());
 
 	/** internal lib version. */
-	public static final String VERSION = "1.1";
+	public static final String VERSION = "1.2";
 
 	/** The Constant START_OF_CMD. */
 	private static final byte START_OF_CMD = 0x01;
@@ -332,10 +332,6 @@ public class Lpd6803 {
 	 * @throws IllegalArgumentException the illegal argument exception
 	 */
 	public boolean sendFrame(byte ofs, byte data[]) throws IllegalArgumentException {		
-//		if (data.length!=64) {
-//			throw new IllegalArgumentException("data lenght must be 128 bytes!");
-//		}
-
 		boolean returnValue = false;
 		byte cmdfull[] = new byte[data.length+7];
 		
@@ -365,7 +361,37 @@ public class Lpd6803 {
 		return returnValue;
 	}
 	
+	
+	public boolean sendAllFrame(byte data[]) throws IllegalArgumentException {		
+		boolean returnValue = false;
+		byte cmdfull[] = new byte[data.length+7];
+		
+		cmdfull[0] = START_OF_CMD;
+		cmdfull[1] = ofs;
+		cmdfull[2] = (byte)data.length;
+		cmdfull[3] = CMD_SENDFRAME;
+		cmdfull[4] = START_OF_DATA;		
+		cmdfull[data.length+5] = END_OF_DATA;
 
+	    System.arraycopy(data, 0, cmdfull, 5, data.length);
+
+		if (cmdfull.length>128) {
+			LOG.log(Level.WARNING, "send {0} bytes, this might overflow the internal serial buffer!", cmdfull.length);
+		}
+		
+		//send frame one
+		if (didFrameChange(ofs, cmdfull)) {
+			if (sendSerialData(cmdfull)) {
+				returnValue=true;
+			} else {
+				//in case of an error, make sure we send it the next time!
+				lastDataMap.put(ofs, "");
+			}
+		}
+		
+		return returnValue;
+	}
+	
 	/**
 	 * Send serial data.
 	 *
