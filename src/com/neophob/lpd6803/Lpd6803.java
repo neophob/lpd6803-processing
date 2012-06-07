@@ -23,6 +23,7 @@ Boston, MA  02111-1307  USA
 
 package com.neophob.lpd6803;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -311,14 +312,12 @@ public class Lpd6803 {
 		int slice=0;
 		int[] tmp = new int[64];
 		int remainingBytes = data.length;
+		
 		while (remainingBytes>63) {
-//			System.out.println("remaining2: "+remainingBytes);
-
 			System.arraycopy(data, slice*64, tmp, 0, 64);
-//			System.out.println("copy done");
-
-			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
-				ret++;			
+			if (sendFrame(n, convertBufferTo15bit(tmp, colorFormat))) {
+				ret++;
+				n+=1; 			//increase offset 
 			}
 			remainingBytes-=64;
 			slice++;
@@ -326,10 +325,9 @@ public class Lpd6803 {
 		
 		//Send last chunk which is smaller than 64 bytes
 		if (remainingBytes>0) {
-			System.out.println("remaining minimum: "+remainingBytes);
-
+			Arrays.fill(tmp, 0);
 			System.arraycopy(data, slice*64, tmp, 0, remainingBytes);
-			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
+			if (sendFrame(n, convertBufferTo15bit(tmp, colorFormat))) {
 				ret++;			
 			}
 		}
@@ -373,36 +371,81 @@ public class Lpd6803 {
 	 * @throws IllegalArgumentException the illegal argument exception
 	 */
 	public boolean sendFrame(byte ofs, byte data[]) throws IllegalArgumentException {		
-		boolean returnValue = false;
-		byte cmdfull[] = new byte[data.length+7];
-		
-		cmdfull[0] = START_OF_CMD;
-		cmdfull[1] = ofs;
-		cmdfull[2] = (byte)data.length;
-		cmdfull[3] = CMD_SENDFRAME;
-		cmdfull[4] = START_OF_DATA;		
-		cmdfull[data.length+5] = END_OF_DATA;
-
-	    System.arraycopy(data, 0, cmdfull, 5, data.length);
-
-		if (cmdfull.length>128) {
-			LOG.log(Level.WARNING, "send {0} bytes, this might overflow the internal serial buffer!", cmdfull.length);
+		//hint: the arduino serial buffer is 128bytes
+		if (data.length!=128) {
+			throw new IllegalArgumentException("data lenght must be 128 bytes!");
 		}
 		
+		boolean returnValue = false;
+		byte cmdfull[] = new byte[data.length+7];
+		byte ofsOne = (byte)(ofs*2);
+		byte ofsTwo = (byte)(ofsOne+1);
+		byte frameOne[] = new byte[64];
+		byte frameTwo[] = new byte[64];
+
+		System.arraycopy(data, 0, frameOne, 0, 64);
+		System.arraycopy(data, 64, frameTwo, 0, 64);
+
+		cmdfull[0] = START_OF_CMD;
+		//cmdfull[1] = ofs;
+		cmdfull[2] = (byte)64;
+		cmdfull[3] = CMD_SENDFRAME;
+		cmdfull[4] = START_OF_DATA;		
+		cmdfull[5+64] = END_OF_DATA;
+
 		//send frame one
-		if (didFrameChange(ofs, cmdfull)) {
+		if (didFrameChange(ofsOne, frameOne)) {
+			cmdfull[1] = ofsOne;
+			//this is needed due the hardware-wirings 
+			//flipSecondScanline(cmdfull, frameOne);
+
 			if (sendSerialData(cmdfull)) {
 				returnValue=true;
 			} else {
 				//in case of an error, make sure we send it the next time!
-				lastDataMap.put(ofs, "");
+				lastDataMap.put(ofsOne, "");
 			}
 		}
-		
+
+		//send frame two
+		if (didFrameChange(ofsTwo, frameTwo)) {
+			cmdfull[1] = ofsTwo;
+			//flipSecondScanline(cmdfull, frameTwo);
+
+			if (sendSerialData(cmdfull)) {
+				returnValue=true;
+			} else {
+				lastDataMap.put(ofsTwo, "");
+			}
+		}/**/
+				
 		return returnValue;
 	}
 	
 	
+	/**
+	 * this function feed the framebufferdata (32 pixels a 2bytes (aka 16bit)
+	 * to the send array. each second scanline gets inverteds
+	 *
+	 * @param cmdfull the cmdfull
+	 * @param frameData the frame data
+	 */
+	private static void flipSecondScanline(byte cmdfull[], byte frameData[]) {
+		int toggler=14;
+		for (int i=0; i<16; i++) {
+			cmdfull[   5+i] = frameData[i];
+			cmdfull[32+5+i] = frameData[i+32];
+
+			cmdfull[16+5+i] = frameData[16+toggler];				
+			cmdfull[48+5+i] = frameData[48+toggler];
+
+			if (i%2==0) {
+				toggler++;
+			} else {
+				toggler-=3;
+			}
+		}
+	}
 	
 	/**
 	 * Send serial data.
