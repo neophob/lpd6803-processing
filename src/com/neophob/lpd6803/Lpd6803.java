@@ -311,9 +311,12 @@ public class Lpd6803 {
 		int slice=0;
 		int[] tmp = new int[64];
 		int remainingBytes = data.length;
-
 		while (remainingBytes>63) {
-		    System.arraycopy(data, slice*64, tmp, 0, 64);
+//			System.out.println("remaining2: "+remainingBytes);
+
+			System.arraycopy(data, slice*64, tmp, 0, 64);
+//			System.out.println("copy done");
+
 			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
 				ret++;			
 			}
@@ -323,7 +326,9 @@ public class Lpd6803 {
 		
 		//Send last chunk which is smaller than 64 bytes
 		if (remainingBytes>0) {
-		    System.arraycopy(data, slice*64, tmp, 0, remainingBytes);
+			System.out.println("remaining minimum: "+remainingBytes);
+
+			System.arraycopy(data, slice*64, tmp, 0, remainingBytes);
 			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
 				ret++;			
 			}
@@ -582,7 +587,7 @@ public class Lpd6803 {
 		int ofs=0;
 
 		//step#1: split up r/g/b 
-		for (int n=0; n<pixelBuffer; n++) {
+		for (int n=0; n<data.length; n++) {
 			//one int contains the rgb color
 			tmp = data[ofs];
 
