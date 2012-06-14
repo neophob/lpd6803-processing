@@ -377,7 +377,7 @@ public class Lpd6803 {
 		}
 		
 		boolean returnValue = false;
-		byte cmdfull[] = new byte[data.length+7];
+		byte cmdfull[] = new byte[64+7];
 		byte ofsOne = (byte)(ofs*2);
 		byte ofsTwo = (byte)(ofsOne+1);
 		byte frameOne[] = new byte[64];
@@ -400,12 +400,13 @@ public class Lpd6803 {
 			//flipSecondScanline(cmdfull, frameOne);
 
 			if (sendSerialData(cmdfull)) {
+				//System.out.println("send "+cmdfull.length+" bytes to "+ofsOne);
 				returnValue=true;
 			} else {
 				//in case of an error, make sure we send it the next time!
 				lastDataMap.put(ofsOne, "");
 			}
-		}
+		} //else System.out.println(ofsOne+" did not change");
 
 		//send frame two
 		if (didFrameChange(ofsTwo, frameTwo)) {
@@ -413,11 +414,12 @@ public class Lpd6803 {
 			//flipSecondScanline(cmdfull, frameTwo);
 
 			if (sendSerialData(cmdfull)) {
+				//System.out.println("send "+cmdfull.length+" bytes to "+ofsTwo);
 				returnValue=true;
 			} else {
 				lastDataMap.put(ofsTwo, "");
 			}
-		}/**/
+		} //else System.out.println(ofsTwo+" did not change");
 				
 		return returnValue;
 	}
@@ -541,10 +543,11 @@ public class Lpd6803 {
 	 *
 	 * @return true if ack received, false if not
 	 */
-	private synchronized boolean waitForAck() {		
+	private synchronized boolean waitForAck() {	
+
 		//TODO some more tuning is needed here.
 		long start = System.currentTimeMillis();
-		int timeout=20;//8; //wait up to 50ms
+		int timeout=10;//8; //wait up to 50ms
 		//log.log(Level.INFO, "wait for ack");
 		while (timeout > 0 && port.available() < 2) {
 			sleep(4); //in ms
@@ -576,6 +579,7 @@ public class Lpd6803 {
 				}
 				this.arduinoHeartbeat = System.currentTimeMillis();
 				if (this.arduinoLastError==0) {
+					//LOG.log(Level.INFO, "#### ACK, duration: {0}ms ###", System.currentTimeMillis()-start);
 					return true;					
 				}
 				ackErrors++;
