@@ -396,9 +396,8 @@ public class Lpd6803 {
 		//send frame one
 		if (didFrameChange(ofsOne, frameOne)) {
 			cmdfull[1] = ofsOne;
-			//this is needed due the hardware-wirings 
-			//flipSecondScanline(cmdfull, frameOne);
-
+      System.arraycopy(frameOne, 0, cmdfull, 5, frameOne.length);
+      
 			if (sendSerialData(cmdfull)) {
 				//System.out.println("send "+cmdfull.length+" bytes to "+ofsOne);
 				returnValue=true;
@@ -411,7 +410,7 @@ public class Lpd6803 {
 		//send frame two
 		if (didFrameChange(ofsTwo, frameTwo)) {
 			cmdfull[1] = ofsTwo;
-			//flipSecondScanline(cmdfull, frameTwo);
+			System.arraycopy(frameTwo, 0, cmdfull, 5, frameTwo.length);
 
 			if (sendSerialData(cmdfull)) {
 				//System.out.println("send "+cmdfull.length+" bytes to "+ofsTwo);
@@ -425,30 +424,7 @@ public class Lpd6803 {
 	}
 	
 	
-	/**
-	 * this function feed the framebufferdata (32 pixels a 2bytes (aka 16bit)
-	 * to the send array. each second scanline gets inverteds
-	 *
-	 * @param cmdfull the cmdfull
-	 * @param frameData the frame data
-	 */
-	private static void flipSecondScanline(byte cmdfull[], byte frameData[]) {
-		int toggler=14;
-		for (int i=0; i<16; i++) {
-			cmdfull[   5+i] = frameData[i];
-			cmdfull[32+5+i] = frameData[i+32];
 
-			cmdfull[16+5+i] = frameData[16+toggler];				
-			cmdfull[48+5+i] = frameData[48+toggler];
-
-			if (i%2==0) {
-				toggler++;
-			} else {
-				toggler-=3;
-			}
-		}
-	}
-	
 	/**
 	 * Send serial data.
 	 *
