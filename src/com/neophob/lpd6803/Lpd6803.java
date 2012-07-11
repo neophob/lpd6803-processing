@@ -315,9 +315,8 @@ public class Lpd6803 {
 		
 		while (remainingBytes>63) {
 			System.arraycopy(data, slice*64, tmp, 0, 64);
-			if (sendFrame(n, convertBufferTo15bit(tmp, colorFormat))) {
+			if (sendFrame(n++, convertBufferTo15bit(tmp, colorFormat))) {
 				ret++;
-				n+=1; 			//increase offset 
 			}
 			remainingBytes-=64;
 			slice++;
